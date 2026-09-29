@@ -1,98 +1,173 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useState } from "react";
+import {
+  ImageBackground,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import StoryBrain from "@/models/StoryBrain";
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+export default function HomeScreen() {
+  const [storyBrain] = useState(() => new StoryBrain());
+  const [currentStep, setCurrentStep] = useState(0);
+
+  const handleChoice = (choiceNumber: 1 | 2) => {
+    setCurrentStep(storyBrain.nextStory(choiceNumber, currentStep));
+  };
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <ImageBackground
+      source={require("../../assets/images/background.png")}
+      resizeMode="cover"
+      style={styles.backgroundImage}
+    >
+      <SafeAreaView style={styles.safeContainer}>
+        <StatusBar style="light" />
+        <View key={currentStep} style={styles.container}>
+          <View style={styles.storySection}>
+            <Text style={styles.storyText}>
+              {storyBrain.getStory(currentStep)}
+            </Text>
+          </View>
+
+          <View style={styles.buttonSection}>
+            <StoryButton
+              backgroundColor="#e64a38"
+              label={storyBrain.getChoice1(currentStep)}
+              onPress={() => handleChoice(1)}
+              style={[styles.button, styles.choice1Button]}
+            />
+
+            {storyBrain.buttonShouldBeVisible(currentStep) && (
+              <StoryButton
+                backgroundColor="#2196f3"
+                label={storyBrain.getChoice2(currentStep)}
+                onPress={() => handleChoice(2)}
+                style={[styles.button, styles.choice2Button]}
+              />
+            )}
+          </View>
+        </View>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
-export default function HomeScreen() {
+type StoryButtonProps = {
+  backgroundColor: string;
+  label: string;
+  onPress: () => void;
+  style: object;
+};
+
+function StoryButton({
+  backgroundColor,
+  label,
+  onPress,
+  style,
+}: StoryButtonProps) {
+  if (Platform.OS === "web") {
+    return (
+      <button
+        type="button"
+        aria-label={label}
+        onClick={onPress}
+        style={{
+          alignItems: "center",
+          backgroundColor,
+          border: "none",
+          borderRadius: 30,
+          color: "#ffffff",
+          display: "flex",
+          fontFamily: "inherit",
+          justifyContent: "center",
+          minHeight: 60,
+          padding: "12px 20px",
+          width: "100%",
+        }}
+      >
+        <span>{label}</span>
+      </button>
+    );
+  }
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+    <TouchableOpacity
+      accessibilityRole="button"
+      activeOpacity={0.8}
+      onPress={onPress}
+      style={style}
+    >
+      <Text style={styles.buttonText}>{label}</Text>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 24,
   },
-  safeArea: {
+  backgroundImage: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+    width: "100%",
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  safeContainer: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
   },
-  title: {
-    textAlign: 'center',
+  storySection: {
+    alignItems: "center",
+    flex: 6,
+    justifyContent: "center",
+    paddingHorizontal: 8,
   },
-  code: {
-    textTransform: 'uppercase',
+  storyText: {
+    color: "#ffffff",
+    fontSize: 22,
+    fontWeight: "400",
+    lineHeight: 34,
+    textAlign: "left",
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  buttonSection: {
+    flex: 2,
+    gap: 16,
+    justifyContent: "flex-end",
+    marginBottom: 12,
+  },
+  button: {
+    alignItems: "center",
+    borderRadius: 30,
+    elevation: 3,
+    justifyContent: "center",
+    minHeight: 60,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  pressedButton: {
+    opacity: 0.78,
+  },
+  choice1Button: {
+    backgroundColor: "#e64a38",
+  },
+  choice2Button: {
+    backgroundColor: "#2196f3",
+  },
+  buttonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "600",
+    lineHeight: 22,
+    textAlign: "center",
   },
 });
